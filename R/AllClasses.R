@@ -3,11 +3,14 @@ setClass(".GeolocationCurvilinear",
            x = "Raster",
            y = "Raster"
          ))
+#' @importFrom nabor WKNNF
 setClass ('RasterMesh',
           contains = 'RasterBrick',
           representation (
-           geolocation = .GeolocationCurvilinear
+           geolocation = ".GeolocationCurvilinear",
+           knnQuery = "WKNNF"
           )
 )
+
 
 
