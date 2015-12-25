@@ -6,4 +6,7 @@ Authors@R: person("Michael D.","Sumner", role = c("aut", "cre"), email = "mdsumn
 Description: More about what it does (maybe more than one line)
 License: GPL-3
 LazyData: TRUE
-Depends: methods, raster
+Depends:
+    methods,
+    raster
+RoxygenNote: 5.0.1

@@ -1,7 +1,19 @@
 rastermesh <- function(x = "data/mer_his_1992_01.nc", varname = "u") {
   d <- brick(x, varname = varname, lvar = 4)
-  gl <- new(".GeolocationCurvilinear", x = raster(x, varname = "lon_u"), y = raster(x, varname = "lat_u"))
-  new("RasterMesh", d, geolocation = gl, knnQuery = WKNNF(cbind(values(gl@x), range(values(gl@y)))))
+  gl <- new("GeolocationCurvilinear", x = raster(x, varname = "lon_u"), y = raster(x, varname = "lat_u"))
+  ## why does this give a different answer??
+##  print(head(cbind(values(gl@x), range(values(gl@y)))))
+  new("RasterMesh", d, geolocation = gl, knnQuery = nabor:::WKNNF(coordinates(gl)))
+}
+
+
+boundary <- function(x) {
+  left <- cellFromCol(x, 1)
+  bottom <- cellFromRow(x, nrow(x))
+  right <- rev(cellFromCol(x, ncol(x)))
+  top <- rev(cellFromRow(x, 1))
+  ## need XYFromCell method
+  coordinates(r)[unique(c(left, bottom, right, top)), ]
 }
 
 
@@ -11,19 +23,37 @@ setMethod("extent", "RasterMesh",
             warning("bounding box extent from geocation values")
             extent(coordinates(x))
           })
+setMethod("coordinates", "GeolocationCurvilinear",
+          function(obj, ...) {
+            cbind(values(obj@x), values(obj@y))
+          })
 setMethod("coordinates", "RasterMesh",
           function(obj, ...) {
-            cbind(values(obj@geolocation@x), values(obj@geolocation@y))
+            coordinates(obj@geolocation)
           }
           )
 
-
+# r <- rastermesh:::rastermesh()
+# y <-  cbind(c(146, 147, 145), c(-65, -64, -60))
 setMethod("extract", signature(x='RasterMesh', y='matrix'),
           function(x, y, ...){
-            x@knnQuery$query(y)
-
+            kn <- x@knnQuery$query(y, k = 1, eps = 0)
+            cell <- as.vector(kn$nn.idx)
+            bdy <- boundary(x)
+            ## TODO test for distance from the edge
+            ## could use distance from knn object
+            ## need som pre-analysis of the coordinates and their spacing
+            outside <- sp::point.in.polygon(y[,1], y[, 2], bdy[,1], bdy[,2], mode.checked = TRUE) < 1
+            if (any(outside)) {
+              dist <- rep(0, nrow(y))
+              dist[outside] <- geosphere::dist2Line(y[outside, , drop = FALSE], bdy)
+              cell[dist > 1e3] <- NA_integer_
+            }
+            cell
           }
           )
+
+
 #
 # scl <- function(x) (x - na.omit(min(x)))/diff(range(na.omit(x)))
 # setMethod("plot", signature(x = 'RasterMesh', y = "ANY"),

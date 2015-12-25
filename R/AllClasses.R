@@ -1,4 +1,4 @@
-setClass(".GeolocationCurvilinear",
+setClass("GeolocationCurvilinear",
          representation(
            x = "Raster",
            y = "Raster"
@@ -7,7 +7,7 @@ setClass(".GeolocationCurvilinear",
 setClass ('RasterMesh',
           contains = 'RasterBrick',
           representation (
-           geolocation = ".GeolocationCurvilinear",
+           geolocation = "GeolocationCurvilinear",
            knnQuery = "WKNNF"
           )
 )
