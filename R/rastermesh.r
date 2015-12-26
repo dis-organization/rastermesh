@@ -1,17 +1,26 @@
+#' @importFrom ncdf4 nc_open nc_close
 .varnames <- function(x) {
+   names(.ndims(x))
+}
+.ndims <- function(x) {
   nc <- nc_open(x)
-  nm <- names(nc$var)
+  dims <- sapply(nc$var, "[[", "ndims")
   nc_close(nc)
-  nm
+  dims
 }
 
-
-rastermesh <- function(x = "data/mer_his_1992_01.nc", varname = "u") {
+#' @importFrom nabor WKNNF
+rastermesh <- function(x = "data/mer_his_1992_01.nc", varname) {
+  if (missing(varname)) {
+    dimnums <- .ndims(x)
+    ## first one with the highest dimension
+    varname <- names(dimnums)[which.max(dimnums)]
+  }
   d <- brick(x, varname = varname, lvar = 4)
   gl <- new("GeolocationCurvilinear", x = raster(x, varname = "lon_u"), y = raster(x, varname = "lat_u"))
   ## why does this give a different answer??
 ##  print(head(cbind(values(gl@x), range(values(gl@y)))))
-  new("RasterMesh", d, geolocation = gl, knnQuery = nabor:::WKNNF(coordinates(gl)))
+  new("RasterMesh", brick(d[[1]]), geolocation = gl, knnQuery = nabor:::WKNNF(coordinates(gl)))
 }
 
 
@@ -41,23 +50,42 @@ setMethod("coordinates", "RasterMesh",
           }
           )
 
+if (!isGeneric("cellFromXY")) {
+  setGeneric("cellFromXY", function(object, xy, ...)
+    standardGeneric("cellFromXY"))
+}
+#setMethod("cellFromXY", signature(object='RasterLayer', xy='matrix'), raster::cellFromXY)
+#' @export
+setMethod("cellFromXY", signature(object='RasterMesh', xy='matrix'),
+          function(object, xy, ...) {
+            kn <- object@knnQuery$query(xy, k = 1, eps = 0)
+            cell <- as.vector(kn$nn.idx)
+            bdy <- boundary(object)
+            ## TODO test for distance from the edge
+            ## could use distance from knn object
+            ## need som pre-analysis of the coordinates and their spacing
+            outside <- sp::point.in.polygon(xy[,1], xy[, 2], bdy[,1], bdy[,2], mode.checked = TRUE) < 1
+            if (any(outside)) {
+              #dist <- rep(0, nrow(xy))
+              #dist[outside] <- geosphere::dist2Line(xy[outside, , drop = FALSE], bdy)
+              #cell[dist > 1e3] <- NA_integer_
+              cell[outside] <- NA_integer_
+            }
+            cell
+          }
+)
+
 # r <- rastermesh:::rastermesh()
 # y <-  cbind(c(146, 147, 145), c(-65, -64, -60))
 setMethod("extract", signature(x='RasterMesh', y='matrix'),
           function(x, y, ...){
-            kn <- x@knnQuery$query(y, k = 1, eps = 0)
-            cell <- as.vector(kn$nn.idx)
-            bdy <- boundary(x)
-            ## TODO test for distance from the edge
-            ## could use distance from knn object
-            ## need som pre-analysis of the coordinates and their spacing
-            outside <- sp::point.in.polygon(y[,1], y[, 2], bdy[,1], bdy[,2], mode.checked = TRUE) < 1
-            if (any(outside)) {
-              dist <- rep(0, nrow(y))
-              dist[outside] <- geosphere::dist2Line(y[outside, , drop = FALSE], bdy)
-              cell[dist > 1e3] <- NA_integer_
+            cells <- cellFromXY(x, y)
+            bad <- is.na(cells)
+            vals <- rep(NA_real_, length(cells))
+            if (any(!bad)) {
+              vals[!bad] <- extract(x, cells[!bad])
             }
-            cell
+            vals
           }
           )
 
