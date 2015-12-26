@@ -33,8 +33,64 @@ NetCDF <- function(x) {
   vars <- do.call(bind_rows, lapply(nc$var, function(x) as_data_frame(x[!names(x) %in% c("id", "dims", "dim", "varsize", "size", "dimids")])))
   vardim <- do.call(bind_rows, lapply(nc$var, function(x) data_frame(id = rep(x$id$id, length(x$dimids)), dimids = x$dimids)))
   nc_close(nc)
-  list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, vars = vars, vardim = vardim)
+  x <- list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, vars = vars, vardim = vardim)
+  class(x) <- c("NetCDF", "list")
+  x
 }
+
+#' Return the names of variables in the file
+names.NetCDF <- function(x) {
+  x$vars$name
+}
+
+
+"[[.NetCDF" <- function(x,i,j,...,drop=TRUE) {
+  var <-  x$vars %>% filter(name == i)
+  class(var) <- c("NetCDFVariable", class(var))
+  var
+}
+
+print.NetCDFVariable <- function(x, ...) {
+  print(t(as.matrix(x)))
+}
+
+library(lazyeval)
+"[.NetCDFVariable" <- function(x, i, j, ..., drop = TRUE) {
+  il <- lazy(i)
+  jl <- lazy(j)
+  dl <- lazy(...)
+  print(dl)
+  print( format(dl$expr))
+  dots <- list(...)
+#  print(dots)
+  ## this is ok, but also need array[i] type indexing, as well as array[matrix]
+  if (missing(i)) stop("argument i must be provided")
+
+  if (missing(j) & x$ndims > 1L) stop("argument j must be provided")
+#browser()
+  nindex <- length(dots) + as.integer(!missing(i)) + as.integer(!missing(j))
+#print(nindex)
+  if (!nindex == x$ndims) stop(sprintf("number of index elements must match dimensions of variable: %i", x$ndims))
+  #print(i)
+  ## now the hard work, see nchelper
+  args <- c(list(i), if (missing(j)) list() else list(j), dots)
+  largs <- format(il$expr)
+  #return(largs)
+ # print(format(il$expr))
+  if (!missing(j)) largs <- sprintf("%s,%s", largs, format(jl$expr))
+
+  #if (!missing(...)) sprintf(largs, format(dl$expr))
+ # print('after')
+  args
+ # sprintf("%s[")
+}
+
+
+nc <- NetCDF("data/mer_his_1992_01.nc")
+Cs_w <- nc[["Cs_w"]]
+lon_u <- nc[["lon_u"]]
+Cs_w[2]
+lon_u[2,3]
 
 
 
