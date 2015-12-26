@@ -1,3 +1,11 @@
+.varnames <- function(x) {
+  nc <- nc_open(x)
+  nm <- names(nc$var)
+  nc_close(nc)
+  nm
+}
+
+
 rastermesh <- function(x = "data/mer_his_1992_01.nc", varname = "u") {
   d <- brick(x, varname = varname, lvar = 4)
   gl <- new("GeolocationCurvilinear", x = raster(x, varname = "lon_u"), y = raster(x, varname = "lat_u"))
