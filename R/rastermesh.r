@@ -86,13 +86,13 @@ library(lazyeval)
 }
 
 
-nc <- NetCDF("data/mer_his_1992_01.nc")
-Cs_w <- nc[["Cs_w"]]
-lon_u <- nc[["lon_u"]]
-Cs_w[2]
-lon_u[2,3]
-
-
+# nc <- NetCDF("data/mer_his_1992_01.nc")
+# Cs_w <- nc[["Cs_w"]]
+# lon_u <- nc[["lon_u"]]
+# Cs_w[2]
+# lon_u[2,3]
+#
+#
 
 
 
