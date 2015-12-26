@@ -98,7 +98,7 @@ lon_u[2,3]
 
 #' @importFrom nabor WKNNF
 rastermesh <- function(x = "data/mer_his_1992_01.nc", varname) {
-  if (!file.exists(x)) stop("no file")
+  if (!file.exists(x)) return("no file")
   if (missing(varname)) {
     dimnums <- .ndims(x)
     ## first one with the highest dimension
