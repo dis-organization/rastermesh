@@ -9,6 +9,37 @@
   dims
 }
 
+.dimnames <- function(x, varname) {
+  nc <- nc_open(x)
+  names(nc$dim[nc$var[[varname]]$dimids])
+}
+
+#' Information about a NetCDF file, in convenient form.
+#'
+#' @param x path to NetCDF file
+#'
+#' @importFrom ncdf4 nc_open
+NetCDF <- function(x) {
+  nc <- nc_open(x)
+  dims <- do.call(bind_rows, lapply(nc$dim, function(x) as_data_frame(x[!names(x) %in% c("dimvarid", "vals", "units", "calendar")])))
+  unlimdims <- do.call(bind_rows, lapply( nc$dim[dims$unlim], function(x) as_data_frame(x[names(x) %in% c("id", "units", "calendar")])))
+  ## do we care that some dims are degenerate 1D?
+  ##lapply(nc$dim, function(x) dim(x$vals))
+  dimvals <- do.call(bind_rows, lapply(nc$dim, function(x) data_frame(id = rep(x$id, length(x$vals)), vals = x$vals)))
+  ## the dimids are in the dims table above
+  groups <- do.call(bind_rows, lapply(nc$groups, function(x) as_data_frame(x[!names(x) %in% "dimid"]))) #as_data_frame[x[!names(x) %in% "dimid"]]))
+  ## leave the fqgn2Rindex for now
+  file <- as_data_frame(nc[!names(nc) %in% c("dim", "var", "groups", "fqgn2Rindex")])
+  vars <- do.call(bind_rows, lapply(nc$var, function(x) as_data_frame(x[!names(x) %in% c("id", "dims", "dim", "varsize", "size", "dimids")])))
+  vardim <- do.call(bind_rows, lapply(nc$var, function(x) data_frame(id = rep(x$id$id, length(x$dimids)), dimids = x$dimids)))
+  nc_close(nc)
+  list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, vars = vars, vardim = vardim)
+}
+
+
+
+
+
 #' @importFrom nabor WKNNF
 rastermesh <- function(x = "data/mer_his_1992_01.nc", varname) {
   if (missing(varname)) {
