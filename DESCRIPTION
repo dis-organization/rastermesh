@@ -9,5 +9,7 @@ LazyData: TRUE
 Depends:
     methods,
     raster
-RoxygenNote: 5.0.0
-Imports: dplyr, ncdf4
+RoxygenNote: 5.0.1
+Imports:
+    dplyr,
+    ncdf4
