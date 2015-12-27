@@ -17,12 +17,14 @@
 #' Information about a NetCDF file, in convenient form.
 #'
 #' @param x path to NetCDF file
-#'
+#' @export
 #' @importFrom ncdf4 nc_open
+#' @importFrom dplyr as_data_frame bind_rows data_frame 
 NetCDF <- function(x) {
-  nc <- nc_open(x)
-  dims <- do.call(bind_rows, lapply(nc$dim, function(x) as_data_frame(x[!names(x) %in% c("dimvarid", "vals", "units", "calendar")])))
-  unlimdims <- do.call(bind_rows, lapply( nc$dim[dims$unlim], function(x) as_data_frame(x[names(x) %in% c("id", "units", "calendar")])))
+  nc <- ncdf4::nc_open(x)
+  dims <- do.call(dplyr::bind_rows, lapply(nc$dim, function(x) dplyr::as_data_frame(x[!names(x) %in% c("dimvarid", "vals", "units", "calendar")])))
+  unlimdims <- NULL
+  if (any(dims$unlim)) unlimdims <- do.call(dplyr::bind_rows, lapply( nc$dim[dims$unlim], function(x) as_data_frame(x[names(x) %in% c("id", "units", "calendar")])))
   ## do we care that some dims are degenerate 1D?
   ##lapply(nc$dim, function(x) dim(x$vals))
   dimvals <- do.call(bind_rows, lapply(nc$dim, function(x) data_frame(id = rep(x$id, length(x$vals)), vals = x$vals)))
@@ -30,10 +32,11 @@ NetCDF <- function(x) {
   groups <- do.call(bind_rows, lapply(nc$groups, function(x) as_data_frame(x[!names(x) %in% "dimid"]))) #as_data_frame[x[!names(x) %in% "dimid"]]))
   ## leave the fqgn2Rindex for now
   file <- as_data_frame(nc[!names(nc) %in% c("dim", "var", "groups", "fqgn2Rindex")])
-  vars <- do.call(bind_rows, lapply(nc$var, function(x) as_data_frame(x[!names(x) %in% c("id", "dims", "dim", "varsize", "size", "dimids")])))
+  var <- do.call(bind_rows, lapply(nc$var, function(x) as_data_frame(x[!names(x) %in% c("id", "dims", "dim", "varsize", "size", "dimids")])))
+  var$id <- sapply(nc$var, function(x) x$id$id)
   vardim <- do.call(bind_rows, lapply(nc$var, function(x) data_frame(id = rep(x$id$id, length(x$dimids)), dimids = x$dimids)))
   nc_close(nc)
-  x <- list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, vars = vars, vardim = vardim)
+  x <- list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, var = var, vardim = vardim)
   class(x) <- c("NetCDF", "list")
   x
 }
@@ -54,13 +57,13 @@ print.NetCDFVariable <- function(x, ...) {
   print(t(as.matrix(x)))
 }
 
-library(lazyeval)
+#library(lazyeval)
 "[.NetCDFVariable" <- function(x, i, j, ..., drop = TRUE) {
-  il <- lazy(i)
-  jl <- lazy(j)
-  dl <- lazy(...)
-  print(dl)
-  print( format(dl$expr))
+ # il <- lazy(i)
+ # jl <- lazy(j)
+ # dl <- lazy(...)
+#  print(dl)
+#  print( format(dl$expr))
   dots <- list(...)
 #  print(dots)
   ## this is ok, but also need array[i] type indexing, as well as array[matrix]
@@ -74,10 +77,10 @@ library(lazyeval)
   #print(i)
   ## now the hard work, see nchelper
   args <- c(list(i), if (missing(j)) list() else list(j), dots)
-  largs <- format(il$expr)
+ # largs <- format(il$expr)
   #return(largs)
  # print(format(il$expr))
-  if (!missing(j)) largs <- sprintf("%s,%s", largs, format(jl$expr))
+  #if (!missing(j)) largs <- sprintf("%s,%s", largs, format(jl$expr))
 
   #if (!missing(...)) sprintf(largs, format(dl$expr))
  # print('after')
@@ -95,9 +98,9 @@ library(lazyeval)
 #
 
 
-
+#' @export
 #' @importFrom nabor WKNNF
-rastermesh <- function(x = "data/mer_his_1992_01.nc", varname) {
+rastermesh <- function(x, varname) {
   if (!file.exists(x)) return("no file")
   if (missing(varname)) {
     dimnums <- .ndims(x)
