@@ -57,6 +57,7 @@ longlistformat <- function(x, n = 8) {
    if (length(x) <= n) return(x)
    paste(paste(head(x, n), collapse = ", "),  "...",  length(x) - n, "more ...")
 }
+#' @export
 print.NetCDF_attributes <- function(x, ...) {
    print("NetCDF attributes:")
    print("Global")
