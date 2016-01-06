@@ -19,6 +19,7 @@ ncatts <- function(x) {
   ncf <- nc_open(x)
   global <- as_data_frame(ncatt_get(ncf, 0))
   var <- lapply(names(ncf$var), function(vname) as_data_frame(ncatt_get(ncf, vname)))
+  names(var) <- names(ncf$var)
   list(global = global, var = var)
 }
 
