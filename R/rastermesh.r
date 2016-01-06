@@ -18,7 +18,7 @@ ncatts <- function(x) {
   on.exit(nc_close(ncf))
   ncf <- nc_open(x)
   global <- as_data_frame(ncatt_get(ncf, 0))
-  var <- lapply(x$var$name, function(vname) as_data_frame(ncatt_get(ncf, vname)))
+  var <- lapply(names(ncf$var), function(vname) as_data_frame(ncatt_get(ncf, vname)))
   list(global = global, var = var)
 }
 
@@ -64,7 +64,7 @@ print.NetCDF_attributes <- function(x, ...) {
    print(x$global)
    print("\n")
    print("Variable attributes:")
-   print(sprintf("variable attributes: %s", longlistformat(names(x$var))))
+   print(sprintf("variable attributes: %s", longlistformat(names(x$))))
 }
 #' Return the names of variables in the file
 names.NetCDF <- function(x) {
