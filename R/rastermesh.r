@@ -46,12 +46,26 @@ NetCDF <- function(x) {
   vardim <- do.call(bind_rows, lapply(nc$var, function(x) data_frame(id = rep(x$id$id, length(x$dimids)), dimids = x$dimids)))
   ## read attributes, should be made optional (?) to avoid long read time
   atts <- ncatts(x)
+  class(atts) <- c("NetCDF_attributes", "list")
   nc_close(nc)
-  x <- list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, var = var, vardim = vardim)
+  x <- list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, var = var, vardim = vardim, atts = atts)
   class(x) <- c("NetCDF", "list")
   x
 }
 
+longlistformat <- function(x, n = 8) {
+   if (length(x) <= n) return(x)
+   paste(paste(head(x, n), collapse = ", "),  "...",  length(x) - n, "more ...")
+}
+print.NetCDF_attributes <- function(x, ...) {
+   print("NetCDF attributes:")
+   print("Global")
+   print("\n")
+   print(x$global)
+   print("\n")
+   print("Variable attributes:")
+   print(sprintf("variable attributes: %s", longlistformat(names(x$var))))
+}
 #' Return the names of variables in the file
 names.NetCDF <- function(x) {
   x$vars$name
