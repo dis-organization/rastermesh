@@ -14,6 +14,15 @@
   names(nc$dim[nc$var[[varname]]$dimids])
 }
 
+ncatts <- function(x) {
+  on.exit(nc_close(ncf))
+  ncf <- nc_open(x)
+  global <- as_data_frame(ncatt_get(ncf, 0))
+  var <- lapply(x$var$name, function(vname) as_data_frame(ncatt_get(ncf, vname)))
+  list(global = global, var = var)
+}
+
+
 #' Information about a NetCDF file, in convenient form.
 #'
 #' @param x path to NetCDF file
@@ -35,6 +44,8 @@ NetCDF <- function(x) {
   var <- do.call(bind_rows, lapply(nc$var, function(x) as_data_frame(x[!names(x) %in% c("id", "dims", "dim", "varsize", "size", "dimids")])))
   var$id <- sapply(nc$var, function(x) x$id$id)
   vardim <- do.call(bind_rows, lapply(nc$var, function(x) data_frame(id = rep(x$id$id, length(x$dimids)), dimids = x$dimids)))
+  ## read attributes, should be made optional (?) to avoid long read time
+  atts <- ncatts(x)
   nc_close(nc)
   x <- list(dims = dims, unlimdims = unlimdims, dimvals = dimvals, groups = groups, file = file, var = var, vardim = vardim)
   class(x) <- c("NetCDF", "list")
