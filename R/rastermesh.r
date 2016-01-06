@@ -64,7 +64,7 @@ print.NetCDF_attributes <- function(x, ...) {
    print(x$global)
    print("\n")
    print("Variable attributes:")
-   print(sprintf("variable attributes: %s", longlistformat(names(x$))))
+   print(sprintf("variable attributes: %s", longlistformat(names(x$var))))
 }
 #' Return the names of variables in the file
 names.NetCDF <- function(x) {
