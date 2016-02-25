@@ -12,4 +12,5 @@ Depends:
 RoxygenNote: 5.0.1
 Imports:
     dplyr,
-    ncdf4
+    ncdf4, rancid
+Remotes: mdsumner/rancid
